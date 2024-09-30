@@ -1,0 +1,693 @@
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет официанта с калькулятором</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .icon-button {
+            position: absolute;
+            top: 5px;
+            right: -150px;
+            width: 150px;
+            background-color: #4a5568;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: right 0.3s;
+        }
+        .icon-button:hover {
+            right: 5px;
+        }
+        .icon-button i {
+            margin-right: 10px;
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .input-wrapper input {
+            width: 80%;
+            padding: 10px;
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+            border-radius: 8px;
+            color: #fff;
+            margin-right: 10px;
+        }
+        .multiplier-buttons {
+            display: flex;
+            flex-direction: column;
+        }
+        .multiplier-buttons button {
+            background-color: #4a5568;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .multiplier-buttons button:hover {
+            background-color: #2d3748;
+        }
+        .cell {
+            display: inline-block;
+            position: relative;
+            margin-right: 10px;
+            padding: 10px;
+            background-color: #4a5568;
+            color: #fff;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        .cell .delete {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 12px;
+            color: #ff4c4c;
+            cursor: pointer;
+        }
+        .report-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        #waiter-report, #program-report {
+            flex: 1;
+            margin-right: 20px;
+            padding: 15px;
+            background-color: #2d3748;
+            border-radius: 8px;
+        }
+        #waiter-total {
+            background: linear-gradient(to right, #38a169, #3182ce);
+        }
+        .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .download-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4a5568;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+        .download-icon:hover {
+            background-color: #2d3748;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-5">
+    <div class="container mx-auto p-5 bg-gray-800 rounded-lg relative">
+        <div class="icon-button" id="all-reports-button">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Все отчеты</span>
+        </div>
+        <div class="icon-button" id="annual-report-button" style="top: 60px;">
+            <i class="fas fa-chart-line"></i>
+            <span>Годовой отчет</span>
+        </div>
+        <div class="icon-button" id="calculator-button" style="top: 115px;">
+            <i class="fas fa-calculator"></i>
+            <span>Калькулятор</span>
+        </div>
+        <h1 id="date-display" class="text-center text-2xl">Дата: </h1>
+
+        <div class="report-container flex justify-center mt-5">
+            <div class="inputs-section w-full max-w-4xl">
+                <label for="transfers-input" class="block mb-2 text-center">Переводы:</label>
+                <div class="input-wrapper">
+                    <input type="text" id="transfers-input" placeholder="Введите переводы через пробел и нажмите Enter">
+                    <div class="multiplier-buttons">
+                        <button class="multiplier-btn" data-multiplier="2">x2</button>
+                        <button class="multiplier-btn" data-multiplier="3">x3</button>
+                        <button class="multiplier-btn" data-multiplier="4">x4</button>
+                        <button class="multiplier-btn" data-multiplier="5">x5</button>
+                    </div>
+                </div>
+                <div id="transfer-cells" class="mb-5 flex flex-wrap"></div>
+
+                <label for="expenses-cash-input" class="block mb-2 text-center">Расходы из кассы:</label>
+                <div class="input-wrapper">
+                    <input type="text" id="expenses-cash-input" placeholder="Введите расходы через пробел и нажмите Enter">
+                </div>
+                <div id="expenses-cash-cells" class="mb-5 flex flex-wrap"></div>
+
+                <label for="expenses-outside-cash-input" class="block mb-2 text-center">Расходы вне кассы:</label>
+                <div class="input-wrapper">
+                    <input type="text" id="expenses-outside-cash-input" placeholder="Введите расходы через пробел и нажмите Enter">
+                </div>
+                <div id="expenses-outside-cash-cells" class="mb-5 flex flex-wrap"></div>
+            </div>
+        </div>
+
+        <div class="report-section flex justify-between mt-5">
+            <div id="waiter-report" class="flex-1 mr-5 p-5 bg-gray-700 rounded-lg">
+                <h2 class="text-xl mb-3">Отчет официанта</h2>
+                <label for="waiter-cash" class="block mb-2">Наличные:</label>
+                <input type="number" id="waiter-cash" class="w-full p-2 mb-5 bg-green-600 border border-green-500 rounded-lg text-white" placeholder="Введите сумму наличных">
+
+                <label for="waiter-transfers" class="block mb-2">Переводы:</label>
+                <input type="number" id="waiter-transfers" class="w-full p-2 mb-5 bg-blue-600 border border-blue-500 rounded-lg text-white" readonly>
+                
+                <label for="waiter-card" class="block mb-2">Оплата картой:</label>
+                <input type="number" id="waiter-card" class="w-full p-2 mb-5 bg-yellow-600 border border-yellow-500 rounded-lg text-white" placeholder="Введите сумму оплаты картой">
+
+                <label for="waiter-total" class="block mb-2">Наличные + Переводы:</label>
+                <input type="number" id="waiter-total" class="w-full p-2 mb-5 border border-gray-500 rounded-lg text-white" readonly>
+
+                <label for="waiter-expenses-cash" class="block mb-2">Расходы из кассы:</label>
+                <input type="number" id="waiter-expenses-cash" class="w-full p-2 mb-5 bg-pink-600 border border-pink-500 rounded-lg text-white" readonly>
+
+                <label for="waiter-expenses-outside-cash" class="block mb-2">Расходы вне кассы:</label>
+                <input type="number" id="waiter-expenses-outside-cash" class="w-full p-2 mb-5 bg-pink-600 border border-pink-500 rounded-lg text-white" readonly>
+
+                <label for="waiter-total-with-expenses" class="block mb-2">Общая сумма с расходом:</label>
+                <input type="number" id="waiter-total-with-expenses" class="w-full p-2 mb-5 bg-gray-600 border border-gray-500 rounded-lg text-white" readonly>
+
+                <label for="waiter-total-without-expenses" class="block mb-2">Общая сумма без расхода:</label>
+                <input type="number" id="waiter-total-without-expenses" class="w-full p-2 mb-5 bg-gray-600 border border-gray-500 rounded-lg text-white" readonly>
+
+                <div id="waiter-result"></div>
+            </div>
+
+            <div id="program-report" class="flex-1 p-5 bg-gray-700 rounded-lg">
+                <h2 class="text-xl mb-3">Отчет программы</h2>
+                <label for="program-cash" class="block mb-2">Наличные:</label>
+                <input type="number" id="program-cash" class="w-full p-2 mb-5 bg-green-600 border border-green-500 rounded-lg text-white" placeholder="Введите сумму наличных">
+
+                <label for="program-transfers" class="block mb-2">Переводы:</label>
+                <input type="number" id="program-transfers" class="w-full p-2 mb-5 bg-blue-600 border border-blue-500 rounded-lg text-white" placeholder="Введите сумму переводов">
+
+                <label for="program-card" class="block mb-2">Оплата картой:</label>
+                <input type="number" id="program-card" class="w-full p-2 mb-5 bg-yellow-600 border border-yellow-500 rounded-lg text-white" placeholder="Введите сумму оплаты картой">
+
+                <label for="program-total" class="block mb-2">Общая сумма:</label>
+                <input type="number" id="program-total" class="w-full p-2 mb-5 bg-gray-600 border border-gray-500 rounded-lg text-white" readonly>
+
+                <div id="program-result"></div>
+            </div>
+        </div>
+
+        <button class="save-button w-full p-3 mt-5 bg-indigo-600 rounded-lg text-white text-lg cursor-pointer hover:bg-indigo-500" id="save-report-button">Сохранить отчет</button>
+
+        <div id="difference" class="mt-5 text-center text-lg p-3 rounded-lg"></div>
+    </div>
+
+    <div class="modal fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center hidden" id="all-reports-modal">
+        <div class="modal-content bg-gray-800 p-5 rounded-lg w-4/5 max-w-3xl text-white">
+            <div class="modal-header flex justify-between items-center">
+                <button id="prev-month" class="text-2xl">&lt;</button>
+                <h2 class="text-2xl" id="modal-month">Месяц</h2>
+                <button id="next-month" class="text-2xl">&gt;</button>
+                <button id="show-month-total" class="text-2xl bg-indigo-600 p-2 rounded-lg">Показать доход</button>
+                <span class="close cursor-pointer text-2xl" id="close-all-reports-modal">&times;</span>
+            </div>
+            <div class="calendar grid grid-cols-7 gap-2 mt-5" id="calendar"></div>
+        </div>
+    </div>
+
+    <div class="modal fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center hidden" id="annual-report-modal">
+        <div class="modal-content bg-gray-800 p-5 rounded-lg w-4/5 max-w-3xl text-white">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-2xl">Годовой отчет</h2>
+                <span class="close cursor-pointer text-2xl" id="close-annual-report-modal">&times;</span>
+            </div>
+            <div id="annual-report-content" class="mt-5"></div>
+        </div>
+    </div>
+
+    <div class="modal fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center hidden" id="calculator-modal">
+        <div class="modal-content bg-gray-800 p-5 rounded-lg w-4/5 max-w-md text-white">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-2xl">Калькулятор</h2>
+                <span class="close cursor-pointer text-2xl" id="close-calculator-modal">&times;</span>
+            </div>
+            <div id="calculator" class="p-5 bg-gray-700 rounded-lg">
+                <input type="text" id="calc-display" class="w-full h-12 text-2xl mb-2 p-2 bg-gray-600 border border-gray-500 rounded-lg text-white" disabled>
+                <div id="calc-buttons" class="grid grid-cols-4 gap-2">
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">7</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">8</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">9</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">/</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">4</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">5</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">6</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">*</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">1</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">2</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">3</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">-</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">0</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">.</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">+</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">=</button>
+                    <button class="calc-btn p-5 bg-indigo-600 rounded-lg">C</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="download-icon hidden" id="download-icon">
+        <i class="fas fa-download text-white text-2xl"></i>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateDisplay = document.getElementById('date-display');
+            const transferInput = document.getElementById('transfers-input');
+            const transferCells = document.getElementById('transfer-cells');
+            const expensesCashInput = document.getElementById('expenses-cash-input');
+            const expensesCashCells = document.getElementById('expenses-cash-cells');
+            const expensesOutsideCashInput = document.getElementById('expenses-outside-cash-input');
+            const expensesOutsideCashCells = document.getElementById('expenses-outside-cash-cells');
+            const waiterTransfersInput = document.getElementById('waiter-transfers');
+            const waiterCashInput = document.getElementById('waiter-cash');
+            const waiterTotalInput = document.getElementById('waiter-total');
+            const waiterCardInput = document.getElementById('waiter-card');
+            const waiterExpensesCashInput = document.getElementById('waiter-expenses-cash');
+            const waiterExpensesOutsideCashInput = document.getElementById('waiter-expenses-outside-cash');
+            const waiterTotalWithExpensesInput = document.getElementById('waiter-total-with-expenses');
+            const waiterTotalWithoutExpensesInput = document.getElementById('waiter-total-without-expenses');
+            const programCashInput = document.getElementById('program-cash');
+            const programTransfersInput = document.getElementById('program-transfers');
+            const programCardInput = document.getElementById('program-card');
+            const programTotalInput = document.getElementById('program-total');
+            const differenceDisplay = document.getElementById('difference');
+            const calcDisplay = document.getElementById('calc-display');
+            const calcButtons = document.querySelectorAll('.calc-btn');
+            const saveReportButton = document.getElementById('save-report-button');
+            const allReportsButton = document.getElementById('all-reports-button');
+            const annualReportButton = document.getElementById('annual-report-button');
+            const calculatorButton = document.getElementById('calculator-button');
+            const allReportsModal = document.getElementById('all-reports-modal');
+            const annualReportModal = document.getElementById('annual-report-modal');
+            const calculatorModal = document.getElementById('calculator-modal');
+            const closeAllReportsModal = document.getElementById('close-all-reports-modal');
+            const closeAnnualReportModal = document.getElementById('close-annual-report-modal');
+            const closeCalculatorModal = document.getElementById('close-calculator-modal');
+            const calendar = document.getElementById('calendar');
+            const annualReportContent = document.getElementById('annual-report-content');
+            const modalMonth = document.getElementById('modal-month');
+            const prevMonthButton = document.getElementById('prev-month');
+            const nextMonthButton = document.getElementById('next-month');
+            const showMonthTotalButton = document.getElementById('show-month-total');
+            const downloadIcon = document.getElementById('download-icon');
+
+            let transfers = [];
+            let expensesCash = [];
+            let expensesOutsideCash = [];
+            let calcValue = '';
+            let calcOperator = '';
+            let calcOperand = '';
+            let reports = {};
+            let currentMonth = new Date().getMonth();
+            let currentYear = new Date().getFullYear();
+
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            dateDisplay.textContent = `Дата: ${formattedDate}`;
+
+            transferInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const transferValues = transferInput.value.split(' ').filter(Boolean);
+                    transferValues.forEach(value => {
+                        const amount = parseFloat(value);
+                        if (!isNaN(amount)) {
+                            transfers.push(amount);
+                        }
+                    });
+                    renderTransfers();
+                    transferInput.value = '';
+                }
+            });
+
+            expensesCashInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const expenseValues = expensesCashInput.value.split(' ').filter(Boolean);
+                    expenseValues.forEach(value => {
+                        const amount = parseFloat(value);
+                        if (!isNaN(amount)) {
+                            expensesCash.push(amount);
+                        }
+                    });
+                    renderExpenses(expensesCash, expensesCashCells);
+                    expensesCashInput.value = '';
+                }
+            });
+
+            expensesOutsideCashInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const expenseValues = expensesOutsideCashInput.value.split(' ').filter(Boolean);
+                    expenseValues.forEach(value => {
+                        const amount = parseFloat(value);
+                        if (!isNaN(amount)) {
+                            expensesOutsideCash.push(amount);
+                        }
+                    });
+                    renderExpenses(expensesOutsideCash, expensesOutsideCashCells);
+                    expensesOutsideCashInput.value = '';
+                }
+            });
+
+            document.querySelectorAll('.multiplier-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const multiplier = parseInt(this.getAttribute('data-multiplier'));
+                    const transferValues = transferInput.value.split(' ').filter(Boolean);
+                    transferValues.forEach(value => {
+                        const amount = parseFloat(value);
+                        if (!isNaN(amount)) {
+                            for (let i = 0; i < multiplier; i++) {
+                                transfers.push(amount);
+                            }
+                        }
+                    });
+                    renderTransfers();
+                    transferInput.value = '';
+                });
+            });
+
+            function renderTransfers() {
+                transferCells.innerHTML = '';
+                transfers.forEach((value, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell inline-block relative mr-2 mb-2 p-2 bg-blue-600 rounded-lg';
+                    cell.innerHTML = `${value.toFixed(2)} ₽ <span class="delete absolute top-1 right-1 text-xs text-red-500 cursor-pointer" data-index="${index}">x</span>`;
+                    transferCells.appendChild(cell);
+                });
+                updateWaiterReport();
+                addDeleteListeners(transfers, transferCells, renderTransfers);
+            }
+
+            function renderExpenses(expenses, container) {
+                container.innerHTML = '';
+                expenses.forEach((value, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell inline-block relative mr-2 mb-2 p-2 bg-pink-600 rounded-lg';
+                    cell.innerHTML = `${value.toFixed(2)} ₽ <span class="delete absolute top-1 right-1 text-xs text-red-500 cursor-pointer" data-index="${index}">x</span>`;
+                    container.appendChild(cell);
+                });
+                addDeleteListeners(expenses, container, () => renderExpenses(expenses, container));
+                updateWaiterReport();
+            }
+
+            function addDeleteListeners(array, container, renderFunction) {
+                container.querySelectorAll('.delete').forEach(deleteBtn => {
+                    deleteBtn.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        array.splice(index, 1);
+                        renderFunction();
+                    });
+                });
+            }
+
+            function updateWaiterReport() {
+                const waiterTransfers = transfers.reduce((a, b) => a + b, 0);
+                const waiterCash = Number(waiterCashInput.value) || 0;
+                const waiterCard = Number(waiterCardInput.value) || 0;
+                const totalExpensesCash = expensesCash.reduce((a, b) => a + b, 0);
+                const totalExpensesOutsideCash = expensesOutsideCash.reduce((a, b) => a + b, 0);
+                const waiterTotal = waiterTransfers + waiterCash + waiterCard;
+                const waiterTotalWithExpenses = waiterTotal - totalExpensesCash;
+                const waiterTotalWithoutExpenses = waiterTotal;
+
+                waiterTransfersInput.value = waiterTransfers.toFixed(2);
+                waiterTotalInput.value = waiterTotal.toFixed(2);
+                waiterExpensesCashInput.value = totalExpensesCash.toFixed(2);
+                waiterExpensesOutsideCashInput.value = totalExpensesOutsideCash.toFixed(2);
+                waiterTotalWithExpensesInput.value = waiterTotalWithExpenses.toFixed(2);
+                waiterTotalWithoutExpensesInput.value = waiterTotalWithoutExpenses.toFixed(2);
+
+                updateProgramReport();
+                calculateDifference();
+            }
+
+            function updateProgramReport() {
+                const programCash = Number(programCashInput.value) || 0;
+                const programTransfers = Number(programTransfersInput.value) || 0;
+                const programCard = Number(programCardInput.value) || 0;
+                const programTotal = programCash + programTransfers + programCard;
+
+                programTotalInput.value = programTotal.toFixed(2);
+            }
+
+            function calculateDifference() {
+                const waiterTotal = Number(waiterTotalInput.value) || 0;
+                const programTotal = Number(programTotalInput.value) || 0;
+                const difference = waiterTotal - programTotal;
+
+                if (difference < 0) {
+                    differenceDisplay.textContent = `Не хватает: ${Math.abs(difference).toFixed(2)} ₽`;
+                    differenceDisplay.classList.remove('bg-green-500');
+                    differenceDisplay.classList.add('bg-red-500');
+                } else {
+                    differenceDisplay.textContent = `Превышает на: ${difference.toFixed(2)} ₽`;
+                    differenceDisplay.classList.remove('bg-red-500');
+                    differenceDisplay.classList.add('bg-green-500');
+                }
+            }
+
+            waiterCashInput.addEventListener('input', updateWaiterReport);
+            waiterCardInput.addEventListener('input', updateWaiterReport);
+            programCashInput.addEventListener('input', updateProgramReport);
+            programTransfersInput.addEventListener('input', updateProgramReport);
+            programCardInput.addEventListener('input', updateProgramReport);
+
+            calcButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const value = this.textContent;
+
+                    if (value === 'C') {
+                        calcValue = '';
+                        calcOperator = '';
+                        calcOperand = '';
+                        calcDisplay.value = '';
+                    } else if (value === '=') {
+                        if (calcValue && calcOperator && calcOperand) {
+                            calcValue = eval(`${calcValue} ${calcOperator} ${calcOperand}`);
+                            calcDisplay.value = calcValue;
+                            calcOperator = '';
+                            calcOperand = '';
+                        }
+                    } else if (['+', '-', '*', '/'].includes(value)) {
+                        if (calcValue) {
+                            calcOperator = value;
+                        }
+                    } else {
+                        if (calcOperator) {
+                            calcOperand += value;
+                            calcDisplay.value = calcOperand;
+                        } else {
+                            calcValue += value;
+                            calcDisplay.value = calcValue;
+                        }
+                    }
+                });
+            });
+
+            saveReportButton.addEventListener('click', function() {
+                const date = new Date().toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                const report = {
+                    waiter: {
+                        cash: Number(waiterCashInput.value) || 0,
+                        transfers: Number(waiterTransfersInput.value) || 0,
+                        card: Number(waiterCardInput.value) || 0,
+                        total: Number(waiterTotalInput.value) || 0,
+                        expensesCash: Number(waiterExpensesCashInput.value) || 0,
+                        expensesOutsideCash: Number(waiterExpensesOutsideCashInput.value) || 0
+                    },
+                    program: {
+                        cash: Number(programCashInput.value) || 0,
+                        transfers: Number(programTransfersInput.value) || 0,
+                        card: Number(programCardInput.value) || 0
+                    }
+                };
+                if (!reports[date]) {
+                    reports[date] = [];
+                }
+                reports[date].push(report);
+                alert('Отчет сохранен!');
+                saveReportToFile(report);
+            });
+
+            allReportsButton.addEventListener('click', function() {
+                allReportsModal.classList.remove('hidden');
+                renderCalendar();
+            });
+
+            annualReportButton.addEventListener('click', function() {
+                annualReportModal.classList.remove('hidden');
+                renderAnnualReport();
+            });
+
+            calculatorButton.addEventListener('click', function() {
+                calculatorModal.classList.remove('hidden');
+            });
+
+            closeAllReportsModal.addEventListener('click', function() {
+                allReportsModal.classList.add('hidden');
+            });
+
+            closeAnnualReportModal.addEventListener('click', function() {
+                annualReportModal.classList.add('hidden');
+            });
+
+            closeCalculatorModal.addEventListener('click', function() {
+                calculatorModal.classList.add('hidden');
+            });
+
+            prevMonthButton.addEventListener('click', function() {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+
+            nextMonthButton.addEventListener('click', function() {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+
+            showMonthTotalButton.addEventListener('click', function() {
+                const monthTotal = calculateMonthTotal(currentMonth, currentYear);
+                alert(`Общий доход за ${modalMonth.textContent}: ${monthTotal.toFixed(2)} ₽`);
+            });
+
+            function renderCalendar() {
+                calendar.innerHTML = '';
+                const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+                modalMonth.textContent = monthNames[currentMonth];
+
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(currentYear, currentMonth, day).toLocaleDateString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                    const dayElement = document.createElement('div');
+                    dayElement.textContent = day;
+                    dayElement.className = reports[date] ? 'bg-indigo-600 p-2 rounded-lg cursor-pointer' : 'bg-gray-600 p-2 rounded-lg';
+                    dayElement.addEventListener('click', function() {
+                        if (reports[date]) {
+                            alert(`Отчет за ${date}:\n\nОфициант:\nНаличные: ${reports[date][0].waiter.cash.toFixed(2)} ₽\nПереводы: ${reports[date][0].waiter.transfers.toFixed(2)} ₽\nКарта: ${reports[date][0].waiter.card.toFixed(2)} ₽\nИтого: ${reports[date][0].waiter.total.toFixed(2)} ₽\nРасходы из кассы: ${reports[date][0].waiter.expensesCash.toFixed(2)} ₽\nРасходы вне кассы: ${reports[date][0].waiter.expensesOutsideCash.toFixed(2)} ₽\n\nПрограмма:\nНаличные: ${reports[date][0].program.cash.toFixed(2)} ₽\nПереводы: ${reports[date][0].program.transfers.toFixed(2)} ₽\nКарта: ${reports[date][0].program.card.toFixed(2)} ₽`);
+                        } else {
+                            alert(`Отчет за ${date} не найден.`);
+                        }
+                    });
+                    calendar.appendChild(dayElement);
+                }
+            }
+
+            function renderAnnualReport() {
+                annualReportContent.innerHTML = '';
+                const currentYear = new Date().getFullYear();
+                let totalWaiterCash = 0;
+                let totalWaiterTransfers = 0;
+                let totalWaiterCard = 0;
+                let totalProgramCash = 0;
+                let totalProgramTransfers = 0;
+                let totalProgramCard = 0;
+
+                for (const date in reports) {
+                    const reportDate = new Date(date.split('.').reverse().join('-'));
+                    if (reportDate.getFullYear() === currentYear) {
+                        totalWaiterCash += reports[date][0].waiter.cash;
+                        totalWaiterTransfers += reports[date][0].waiter.transfers;
+                        totalWaiterCard += reports[date][0].waiter.card;
+                        totalProgramCash += reports[date][0].program.cash;
+                        totalProgramTransfers += reports[date][0].program.transfers;
+                        totalProgramCard += reports[date][0].program.card;
+                    }
+                }
+
+                annualReportContent.innerHTML = `
+                    <p>Официант:</p>
+                    <p>Наличные: ${totalWaiterCash.toFixed(2)} ₽</p>
+                    <p>Переводы: ${totalWaiterTransfers.toFixed(2)} ₽</p>
+                    <p>Карта: ${totalWaiterCard.toFixed(2)} ₽</p>
+                    <p>Итого: ${(totalWaiterCash + totalWaiterTransfers + totalWaiterCard).toFixed(2)} ₽</p>
+                    <br>
+                    <p>Программа:</p>
+                    <p>Наличные: ${totalProgramCash.toFixed(2)} ₽</p>
+                    <p>Переводы: ${totalProgramTransfers.toFixed(2)} ₽</p>
+                    <p>Карта: ${totalProgramCard.toFixed(2)} ₽</p>
+                    <p>Итого: ${(totalProgramCash + totalProgramTransfers + totalProgramCard).toFixed(2)} ₽</p>
+                `;
+            }
+
+            function calculateMonthTotal(month, year) {
+                let monthTotal = 0;
+                for (const date in reports) {
+                    const reportDate = new Date(date.split('.').reverse().join('-'));
+                    if (reportDate.getMonth() === month && reportDate.getFullYear() === year) {
+                        monthTotal += reports[date][0].waiter.total;
+                    }
+                }
+                return monthTotal;
+            }
+
+            function saveReportToFile(report) {
+                const data = JSON.stringify(report, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'report.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            downloadIcon.addEventListener('click', function() {
+                const report = {
+                    waiter: {
+                        cash: Number(waiterCashInput.value) || 0,
+                        transfers: Number(waiterTransfersInput.value) || 0,
+                        card: Number(waiterCardInput.value) || 0,
+                        total: Number(waiterTotalInput.value) || 0,
+                        expensesCash: Number(waiterExpensesCashInput.value) || 0,
+                        expensesOutsideCash: Number(waiterExpensesOutsideCashInput.value) || 0
+                    },
+                    program: {
+                        cash: Number(programCashInput.value) || 0,
+                        transfers: Number(programTransfersInput.value) || 0,
+                        card: Number(programCardInput.value) || 0
+                    }
+                };
+                saveReportToFile(report);
+            });
+        });
+    </script>
+</body>
+</html>
